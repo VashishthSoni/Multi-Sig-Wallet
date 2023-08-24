@@ -16,7 +16,7 @@ contract MultiSigWallet {
 
     address[] public owners;
     mapping(address => bool) public isOwner;
-    uint public numConfirmationsRequired;
+    uint public immutable numConfirmationsRequired;
 
     struct Transaction {
         address from;
