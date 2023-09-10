@@ -55,6 +55,7 @@ contract MultiSigWallet {
         require(msg.sender == transactions[_txIndex].from,"Only owner who requested is allowed to execute");
         _;
     }
+    
     constructor(address[] memory _owners, uint _numConfirmationsRequired) {
         require(_owners.length > 0, "owners required");
         require(
@@ -63,7 +64,7 @@ contract MultiSigWallet {
             "invalid number of required confirmations"
         );
 
-        for (uint i = 0; i < _owners.length; i++) {
+        for (uint i = 0; i < _owners.length;) {
             address owner = _owners[i];
 
             require(owner != address(0), "invalid owner");
@@ -71,6 +72,9 @@ contract MultiSigWallet {
 
             isOwner[owner] = true;
             owners.push(owner);
+            unchecked{
+                ++i;
+            }
         }
 
         numConfirmationsRequired = _numConfirmationsRequired;
@@ -83,7 +87,7 @@ contract MultiSigWallet {
     function submitTransaction(
         address _to,
         uint _value,
-        bytes memory _data
+        bytes calldata _data
     ) public onlyOwner returns(uint){ 
         uint txIndex = transactions.length;
 
@@ -106,7 +110,9 @@ contract MultiSigWallet {
         uint _txIndex
     ) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) notConfirmed(_txIndex) {
         Transaction storage transaction = transactions[_txIndex];
-        transaction.numConfirmations += 1;
+        unchecked{
+            transaction.numConfirmations += 1;
+        }
         isConfirmed[_txIndex][msg.sender] = true;
 
         emit ConfirmTransaction(msg.sender, _txIndex);
@@ -138,42 +144,12 @@ contract MultiSigWallet {
         Transaction storage transaction = transactions[_txIndex];
 
         require(isConfirmed[_txIndex][msg.sender], "tx not confirmed");
-
-        transaction.numConfirmations -= 1;
+        unchecked{
+            transaction.numConfirmations -= 1;
+        }
+        
         isConfirmed[_txIndex][msg.sender] = false;
 
         emit RevokeConfirmation(msg.sender, _txIndex);
-    }
-
-    function getOwners() public view returns (address[] memory) {
-        return owners;
-    }
-
-    function getTransactionCount() public view returns (uint) {
-        return transactions.length;
-    }
-
-    function getTransaction(
-        uint _txIndex
-    )
-        public
-        view
-        returns (
-            address to,
-            uint value,
-            bytes memory data,
-            bool executed,
-            uint numConfirmations
-        )
-    {
-        Transaction storage transaction = transactions[_txIndex];
-
-        return (
-            transaction.to,
-            transaction.value,
-            transaction.data,
-            transaction.executed,
-            transaction.numConfirmations
-        );
     }
 }
