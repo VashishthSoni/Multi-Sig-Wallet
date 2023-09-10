@@ -137,9 +137,10 @@ contract MultiSigWallet {
     function revokeConfirmation(
         uint _txIndex
     ) public onlyOwner txExists(_txIndex) notExecuted(_txIndex) {
-        Transaction storage transaction = transactions[_txIndex];
-
+        
         require(isConfirmed[_txIndex][msg.sender], "tx not confirmed");
+
+        Transaction storage transaction = transactions[_txIndex];
         unchecked{
             transaction.numConfirmations -= 1;
         }
